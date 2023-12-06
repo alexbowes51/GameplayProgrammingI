@@ -231,8 +231,33 @@ int main()
 		}
 
 		// Update AI
-		ai.setCurrent(gpp::Events::Event::RUN_RIGHT_START_EVENT);
+        ai.setCurrent(gpp::Events::Event::NONE);
+		int weapon = rand() % 5 + 1;
+		
+		switch (weapon)
+		{
+		case 1:
+			ai.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
+			break;
+		case 2:
+			ai.setCurrent(gpp::Events::Event::ATTACK_STOP_EVENT);
+			break;
+		case 3:
+			ai.setCurrent(gpp::Events::Event::THROW_START_EVENT);
+			break;
+		case 4:
+			ai.setCurrent(gpp::Events::Event::THROW_STOP_EVENT);
+			break;
+		default:
+			ai.setCurrent(gpp::Events::Event::NONE);
+			break;
+		}
+		
 		npc.handleInput(ai);
+
+		npc.getAnimatedSprite().setScale(-1.0f, 1.0f);
+		npc.getAnimatedSprite().setPosition(700.0f, 0.0f);
+		
 
 		// Update the Player
 		player.update();
