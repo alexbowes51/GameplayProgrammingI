@@ -15,6 +15,8 @@ private:
 public:
 	Player(const AnimatedSprite&);
 	~Player();
+	bool m_Turn; 
+	bool m_Health;
 	virtual void handleInput(gpp::Events);
 	virtual void update();
 	AnimatedSprite& getAnimatedSprite();
