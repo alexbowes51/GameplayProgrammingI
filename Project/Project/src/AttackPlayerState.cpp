@@ -46,6 +46,7 @@ void AttackPlayerState::enter(Player& player)
 	player.getAnimatedSprite().addFrame(sf::IntRect(0, 1485, 536, 495));
 
 	player.getAnimatedSprite().setTime(seconds(0.03f));
+
 }
 void AttackPlayerState::exit(Player& player)
 {
