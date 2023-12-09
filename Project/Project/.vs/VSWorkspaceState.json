@@ -1,9 +1,10 @@
 {
   "ExpandedNodes": [
     "",
+    "\\assets",
     "\\include",
     "\\src"
   ],
-  "SelectedNode": "\\src\\AttackPlayerState.cpp",
+  "SelectedNode": "\\include\\ClimbDownPlayerState.h",
   "PreviewInSolutionExplorer": false
 }

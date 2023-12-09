@@ -7,19 +7,25 @@
 #include <Events.h>
 #include <Debug.h>
 
+using namespace std;
+using namespace sf;
+float VectorLength(sf::Vector2f);
+
 //added cute_c2 for collisons
 #define CUTE_C2_IMPLEMENTATION
 #include <cute_c2.h>
 
 
-using namespace std;
-using namespace sf;
 
 sf::Font m_CYBER;
 
 sf::Text m_PlHealth;
 sf::Text m_EnHealth;
 sf::Text m_Attack;
+sf::Texture m_Kunai_texture;
+sf::Sprite m_Kunai_sprite;
+
+
 
 void SetupFonts(){
 	if (!m_CYBER.loadFromFile(m_Fonts)) {
@@ -50,7 +56,7 @@ void SetupFonts(){
 int main()
 {
 	// Create the main window
-	sf::RenderWindow window(sf::VideoMode(1000, 600), "Player Finite State Machine");
+	sf::RenderWindow window(sf::VideoMode(1000, 600), "NINJA FIGHT CLUB");
 
 	SetupFonts();
 
@@ -74,21 +80,52 @@ int main()
 	Player player(player_animated_sprite);
 	player.m_Health = 100;
 	player.m_Turn = true;
+	player.m_Attacking = false;
+	player.m_Shooting = false;
+	player.m_Defending = false;
+	sf::Vector2f m_PlCoLocation;
+	m_PlCoLocation = sf::Vector2f{ 175.0f,230.0f };
 
 	//Playes Shapes
 	sf::RectangleShape m_playerBody(sf::Vector2f(100, 200));
 	m_playerBody.setPosition(75, 150);
 	m_playerBody.setFillColor(sf::Color::Green);
 
+	//Player Collider
+	sf::CircleShape m_PlCollider(20);
+	m_PlCollider.setFillColor(sf::Color::Blue);
+	m_PlCollider.setPosition(m_PlCoLocation);
+
 	//Enemys variables
 	Player npc(player_animated_sprite);
 	npc.m_Turn = false;
 	npc.m_Health = 100;
-	
+	sf::Vector2f m_EnLocation;
+	m_EnLocation = sf::Vector2f{ 650.0f,150.0f };
+
 	//Enemys Shapes
 	sf::RectangleShape m_enemyBody(sf::Vector2f(100, 200));
-	m_enemyBody.setPosition(650,150);
+	m_enemyBody.setPosition(m_EnLocation);
 	m_enemyBody.setFillColor(sf::Color::Red);
+
+	//Enemy Collider
+	sf::CircleShape m_EnCollider(20);
+
+	//Setup Player Collidor
+	c2Circle PlayerCollison;
+	PlayerCollison.p = c2V(m_PlCollider.getPosition().x, m_PlCollider.getPosition().y);
+	PlayerCollison.r = m_PlCollider.getRadius();
+
+	//Setup NPC AABB
+	c2AABB aabb_npc;
+	aabb_npc.min = c2V(m_enemyBody.getPosition().x, m_enemyBody.getPosition().y);
+	aabb_npc.max = c2V(
+		m_enemyBody.getPosition().x +
+		m_enemyBody.getGlobalBounds().width,
+		m_enemyBody.getPosition().y +
+		m_enemyBody.getGlobalBounds().height);
+
+	bool collison = c2CircletoAABB(PlayerCollison, aabb_npc);
 
 	gpp::Events input;
 	gpp::Events ai;
@@ -116,7 +153,17 @@ int main()
 				     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
 						input.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
 						std::cout << "Player is attacking" << std::endl;
+						player.m_Attacking = true;
 					}
+					 if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+						 input.setCurrent(gpp::Events::Event::THROW_START_EVENT);
+						 std::cout << "Player is throwing" << std::endl;
+						 player.m_Shooting = true;
+					 }
+					 if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+						 input.setCurrent(gpp::Events::Event::JUMP_UP_EVENT);
+						 std::cout << "Player is Jumping" << std::endl;
+					 }
 
 				}
 			break;
@@ -131,6 +178,11 @@ int main()
 					if (event.key.code == sf::Keyboard::A) {
 						input.setCurrent(gpp::Events::Event::ATTACK_STOP_EVENT);
 						std::cout << "Stopping Player attacking" << std::endl;
+						player.m_Attacking = true;
+					}
+					if (event.key.code == sf::Keyboard::S) {
+						input.setCurrent(gpp::Events::Event::THROW_STOP_EVENT);
+						std::cout << "Stopping Player Throwing" << std::endl;
 					}
 				}
 				break;
@@ -181,6 +233,39 @@ int main()
 		if (player.m_Health >= 0)
 		{
 			player.update();
+			if (player.m_Attacking == true || player.m_Shooting == true)
+			{
+				m_PlCoLocation.x += 1.0f;
+				m_PlCollider.setPosition(m_PlCoLocation);
+				if (player.m_Shooting == true)
+				{
+					if (!m_Kunai_texture.loadFromFile(m_Kunai)) {
+						std::cout << "ERROR with Kunai" << std::endl;
+					}
+					m_Kunai_sprite.setTexture(m_Kunai_texture);
+					m_Kunai_sprite.setRotation(90.0f);
+					m_Kunai_sprite.setPosition(m_PlCoLocation);
+				}
+
+				// Update the position of the player's collider before collision detection
+				PlayerCollison.p = c2V(m_PlCoLocation.x, m_PlCoLocation.y);
+
+				// Perform collision detection after updating the player's position
+				collison = c2CircletoAABB(PlayerCollison, aabb_npc);
+
+				if (collison || m_PlCoLocation.x >= 1000)
+				{
+					m_PlCoLocation = sf::Vector2f{ 175.0f, 230.0f };
+					m_PlCollider.setPosition(m_PlCoLocation);
+					player.m_Attacking = false;
+					player.m_Shooting = false;
+					if (collison)
+					{
+						npc.m_Health = npc.m_Health - 20;
+						m_EnHealth.setString("HEALTH = " + std::to_string(npc.m_Health));
+					}
+				}
+			}
 		}
 		
 		// Update the NPC
@@ -200,10 +285,15 @@ int main()
 			if (m_Graphics == false)
 			{
 				window.draw(m_playerBody);
+				window.draw(m_PlCollider);
 			}
 			if (m_Graphics == true)
 			{
 				window.draw(player.getAnimatedSpriteFrame());
+				if (!collison && player.m_Shooting == true)
+				{
+					window.draw(m_Kunai_sprite);
+				}
 			}
 		} 
 		window.draw(m_PlHealth);
@@ -232,3 +322,4 @@ int main()
 
 	return EXIT_SUCCESS;
 };
+

@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <IdlePlayerState.h>
 
+
+
 class Player
 {
 private:
@@ -20,6 +22,7 @@ public:
 	bool m_Shooting;
 	bool m_Defending;
 	int m_Health;
+	
 	virtual void handleInput(gpp::Events);
 	virtual void update();
 	AnimatedSprite& getAnimatedSprite();

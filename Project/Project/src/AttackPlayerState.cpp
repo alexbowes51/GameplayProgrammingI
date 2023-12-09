@@ -24,11 +24,7 @@ PlayerState* AttackPlayerState::handleInput(gpp::Events& input)
 	}
 	return nullptr;
 }
-PlayerState* AttackPlayerState::CreateShape()
-{
 
-	
-}
 void AttackPlayerState::update(Player& player) {
 	DEBUG_MSG("AttackPlayerState::update");
 	DEBUG_MSG(typeid(player).name());
