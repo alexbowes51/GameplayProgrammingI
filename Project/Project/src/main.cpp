@@ -5,6 +5,10 @@
 #include <Player.h>
 #include <Events.h>
 #include <Debug.h>
+//added cute_c2 for collisons
+#define CUTE_C2_IMPLEMENTATION
+#include <cute_c2.h>
+
 
 using namespace std;
 
@@ -147,6 +151,8 @@ int main()
 		{
 			npc.update();
 		}
+
+		
 
 		// Clear screen
 		window.clear();
