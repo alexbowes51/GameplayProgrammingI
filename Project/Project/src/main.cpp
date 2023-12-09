@@ -3,19 +3,56 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <Player.h>
+#include <cstdlib>
 #include <Events.h>
 #include <Debug.h>
+
 //added cute_c2 for collisons
 #define CUTE_C2_IMPLEMENTATION
 #include <cute_c2.h>
 
 
 using namespace std;
+using namespace sf;
+
+sf::Font m_CYBER;
+
+sf::Text m_PlHealth;
+sf::Text m_EnHealth;
+sf::Text m_Attack;
+
+void SetupFonts(){
+	if (!m_CYBER.loadFromFile(m_Fonts)) {
+		std::cout << "ERROR with fonts" << std::endl;
+	}
+	m_PlHealth.setFont(m_CYBER);
+	m_PlHealth.setString("HEALTH = 100");
+	m_PlHealth.setPosition(20.0f, 450.0f);
+	m_PlHealth.setCharacterSize(30U);
+	m_PlHealth.setFillColor(sf::Color::Green);
+
+	m_EnHealth.setFont(m_CYBER);
+	m_EnHealth.setString("HEALTH = 100");
+	m_EnHealth.setPosition(550.0f, 450.0f);
+	m_EnHealth.setCharacterSize(30U);
+	m_EnHealth.setFillColor(sf::Color::Red);
+
+	m_Attack.setFont(m_CYBER);
+	m_Attack.setString("A : Attack '20 Dammage'");
+	m_Attack.setPosition(20.0f, 550.0f);
+	m_Attack.setCharacterSize(20U);
+	m_Attack.setFillColor(sf::Color::White);
+	m_Attack.setOutlineThickness(2.5f);
+	m_Attack.setOutlineColor(sf::Color::Black);
+
+}
 
 int main()
 {
 	// Create the main window
 	sf::RenderWindow window(sf::VideoMode(1000, 600), "Player Finite State Machine");
+
+	SetupFonts();
 
 	// Load a sprite to display
 	sf::Texture player_texture;
@@ -33,25 +70,25 @@ int main()
 	// Setup Players Default Animated Sprite
 	AnimatedSprite player_animated_sprite(player_texture);
 
-	//Players varibles/shapes
-	sf::RectangleShape m_playerBody(sf::Vector2f(100, 200));
-	m_playerBody.setPosition(75, 150);
-	m_playerBody.setFillColor(sf::Color::Green);
+	//Players varibles
 	Player player(player_animated_sprite);
 	player.m_Health = 100;
 	player.m_Turn = true;
 
+	//Playes Shapes
+	sf::RectangleShape m_playerBody(sf::Vector2f(100, 200));
+	m_playerBody.setPosition(75, 150);
+	m_playerBody.setFillColor(sf::Color::Green);
 
-
-
-	sf::RectangleShape m_enemyBody(sf::Vector2f(100, 200));
-	m_enemyBody.setPosition(750,150);
-	m_enemyBody.setFillColor(sf::Color::Red);
+	//Enemys variables
 	Player npc(player_animated_sprite);
 	npc.m_Turn = false;
 	npc.m_Health = 100;
 	
-
+	//Enemys Shapes
+	sf::RectangleShape m_enemyBody(sf::Vector2f(100, 200));
+	m_enemyBody.setPosition(650,150);
+	m_enemyBody.setFillColor(sf::Color::Red);
 
 	gpp::Events input;
 	gpp::Events ai;
@@ -137,7 +174,7 @@ int main()
 			}
 		}
 		npc.getAnimatedSprite().setScale(-1.0f, 1.0f);
-		npc.getAnimatedSprite().setPosition(900.0f, 0.0f);
+		npc.getAnimatedSprite().setPosition(800.0f, 0.0f);
 		
 
 		// Update the Player
@@ -157,7 +194,7 @@ int main()
 		// Clear screen
 		window.clear();
 
-		// Draw the Players Current Animated Sprite
+		// Draw the Players Current Animated Sprites & info
 		if (player.m_Health >= 0)
 		{
 			if (m_Graphics == false)
@@ -168,9 +205,10 @@ int main()
 			{
 				window.draw(player.getAnimatedSpriteFrame());
 			}
-		}
+		} 
+		window.draw(m_PlHealth);
 
-		// Draw the NPC's Current Animated Sprite
+		// Draw the NPC's Current Animated Sprites & info
 		if (npc.m_Health >= 0)
 		{
 			if (m_Graphics == false)
@@ -183,7 +221,11 @@ int main()
 				window.draw(npc.getAnimatedSpriteFrame());
 			}
 		}
+		window.draw(m_EnHealth);
 
+		//Draw the Game Ui
+		window.draw(m_Attack);	
+               
 		// Update the window
 		window.display();
 	}

@@ -7,6 +7,7 @@
 class AttackPlayerState : public PlayerState {
 public:
 	virtual PlayerState* handleInput(gpp::Events& input);
+	virtual PlayerState* CreateShape();
 	virtual void update(Player&);
 	virtual void enter(Player&);
 	virtual void exit(Player&);
