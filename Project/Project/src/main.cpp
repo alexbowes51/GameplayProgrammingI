@@ -22,6 +22,8 @@ sf::Font m_CYBER;
 sf::Text m_PlHealth;
 sf::Text m_EnHealth;
 sf::Text m_Attack;
+sf::Text m_Throw;
+sf::Text m_Dodge;
 sf::Texture m_Kunai_texture;
 sf::Sprite m_Kunai_sprite;
 
@@ -47,9 +49,25 @@ void SetupFonts(){
 	m_Attack.setString("A : Attack '20 Dammage'");
 	m_Attack.setPosition(20.0f, 550.0f);
 	m_Attack.setCharacterSize(20U);
-	m_Attack.setFillColor(sf::Color::White);
+	m_Attack.setFillColor(sf::Color::Blue);
 	m_Attack.setOutlineThickness(2.5f);
-	m_Attack.setOutlineColor(sf::Color::Black);
+	m_Attack.setOutlineColor(sf::Color::White);
+
+	m_Throw.setFont(m_CYBER);
+	m_Throw.setString("S : Throw '10 Dammage'");
+	m_Throw.setPosition(370.0f, 550.0f);
+	m_Throw.setCharacterSize(20U);
+	m_Throw.setFillColor(sf::Color::Blue);
+	m_Throw.setOutlineThickness(2.5f);
+	m_Throw.setOutlineColor(sf::Color::White);
+
+	m_Dodge.setFont(m_CYBER);
+	m_Dodge.setString("D :Dodge");
+	m_Dodge.setPosition(720.0f, 550.0f);
+	m_Dodge.setCharacterSize(20U);
+	m_Dodge.setFillColor(sf::Color::Blue);
+	m_Dodge.setOutlineThickness(2.5f);
+	m_Dodge.setOutlineColor(sf::Color::White);
 
 }
 
@@ -57,6 +75,7 @@ int main()
 {
 	// Create the main window
 	sf::RenderWindow window(sf::VideoMode(1000, 600), "NINJA FIGHT CLUB");
+	sf::Clock clock;
 
 	SetupFonts();
 
@@ -83,8 +102,11 @@ int main()
 	player.m_Attacking = false;
 	player.m_Shooting = false;
 	player.m_Defending = false;
+	
 	sf::Vector2f m_PlCoLocation;
 	m_PlCoLocation = sf::Vector2f{ 175.0f,230.0f };
+	sf::Vector2f m_EnCoLocation;
+	m_EnCoLocation = sf::Vector2f{ 610.0f,230.0f };
 
 	//Playes Shapes
 	sf::RectangleShape m_playerBody(sf::Vector2f(100, 200));
@@ -110,11 +132,19 @@ int main()
 
 	//Enemy Collider
 	sf::CircleShape m_EnCollider(20);
+	m_EnCollider.setFillColor(sf::Color::Yellow);
+	m_EnCollider.setPosition(m_EnCoLocation);
+
 
 	//Setup Player Collidor
 	c2Circle PlayerCollison;
 	PlayerCollison.p = c2V(m_PlCollider.getPosition().x, m_PlCollider.getPosition().y);
 	PlayerCollison.r = m_PlCollider.getRadius();
+
+	//Setup Enemy Collider
+	c2Circle EnemyCollison;
+	EnemyCollison.p = c2V(m_EnCollider.getPosition().x, m_EnCollider.getPosition().y);
+	EnemyCollison.r =  m_EnCollider.getRadius();
 
 	//Setup NPC AABB
 	c2AABB aabb_npc;
@@ -125,7 +155,19 @@ int main()
 		m_enemyBody.getPosition().y +
 		m_enemyBody.getGlobalBounds().height);
 
+	//Set Player AABB
+	c2AABB aabb_player;
+	aabb_player.min = c2V(m_playerBody.getPosition().x, m_playerBody.getPosition().y);
+	aabb_player.max = c2V(
+		m_playerBody.getPosition().x +
+		m_playerBody.getGlobalBounds().width,
+		m_playerBody.getPosition().y +
+		m_playerBody.getGlobalBounds().height);
+
+
+
 	bool collison = c2CircletoAABB(PlayerCollison, aabb_npc);
+	bool collison2 = c2CircletoAABB(EnemyCollison, aabb_player);
 
 	gpp::Events input;
 	gpp::Events ai;
@@ -154,17 +196,24 @@ int main()
 						input.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
 						std::cout << "Player is attacking" << std::endl;
 						player.m_Attacking = true;
+						npc.m_Turn = true;
+						player.m_Turn = false;
 					}
 					 if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
 						 input.setCurrent(gpp::Events::Event::THROW_START_EVENT);
 						 std::cout << "Player is throwing" << std::endl;
 						 player.m_Shooting = true;
+						 npc.m_Turn = true;
+						 player.m_Turn = false;
+						 
 					 }
 					 if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
 						 input.setCurrent(gpp::Events::Event::JUMP_UP_EVENT);
 						 std::cout << "Player is Jumping" << std::endl;
+						 player.m_Defending = true;
+						 npc.m_Turn = true;
+						 player.m_Turn = false;
 					 }
-
 				}
 			break;
 	
@@ -174,17 +223,16 @@ int main()
 					m_Graphics = true;
 					std::cout << "Graphics on" << std::endl;
 				}
-				if (player.m_Turn == true){
 					if (event.key.code == sf::Keyboard::A) {
 						input.setCurrent(gpp::Events::Event::ATTACK_STOP_EVENT);
 						std::cout << "Stopping Player attacking" << std::endl;
-						player.m_Attacking = true;
+					
 					}
 					if (event.key.code == sf::Keyboard::S) {
 						input.setCurrent(gpp::Events::Event::THROW_STOP_EVENT);
 						std::cout << "Stopping Player Throwing" << std::endl;
+						
 					}
-				}
 				break;
 			default:
 				DEBUG_MSG("gpp::Events::Event::NONE");
@@ -195,44 +243,73 @@ int main()
 			player.handleInput(input);
 		}
 
+		
 		// Update AI
-       
+		sf::Time deltaTime = clock.restart();
 
-		if (npc.m_Health >= 0)
-		{
-			if (npc.m_Turn == true) {
-				int weapon = rand() % 2 + 1;
+		if (npc.m_Health > 0 && npc.m_Turn) {
+			// Decision-making
+			gpp::Events aiDecision;
 
-				switch (weapon)
-				{
+			// Introduce a cooldown timer for AI decisions (e.g., 1 second)
+			static sf::Time aiDecisionCooldown = sf::seconds(1.0f);
+			static sf::Time currentCooldown = sf::Time::Zero;
+
+			// Only update cooldown if not in attack or throwing state
+			if (!npc.m_Attacking && !npc.m_Shooting) {
+				currentCooldown -= deltaTime;
+			}
+
+			if (currentCooldown <= sf::Time::Zero) {
+				int weapon = rand() % 3 + 1;
+				switch (weapon) {
 				case 1:
-					ai.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
+					aiDecision.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
+					npc.m_Attacking = true;
 					break;
 				case 2:
-					ai.setCurrent(gpp::Events::Event::ATTACK_STOP_EVENT);
+					aiDecision.setCurrent(gpp::Events::Event::THROW_START_EVENT);
+					npc.m_Shooting = true;
 					break;
 				case 3:
-					ai.setCurrent(gpp::Events::Event::THROW_START_EVENT);
+					aiDecision.setCurrent(gpp::Events::Event::JUMP_UP_EVENT);
+					npc.m_Defending = true;
 					break;
 				case 4:
-					ai.setCurrent(gpp::Events::Event::THROW_STOP_EVENT);
+					aiDecision.setCurrent(gpp::Events::Event::ATTACK_STOP_EVENT);
+					currentCooldown = aiDecisionCooldown;
+					break;
+				case 5:
+					aiDecision.setCurrent(gpp::Events::Event::THROW_STOP_EVENT);
+					currentCooldown = aiDecisionCooldown;
 					break;
 				default:
-					ai.setCurrent(gpp::Events::Event::NONE);
+					aiDecision.setCurrent(gpp::Events::Event::NONE);
 					break;
 				}
 
-				npc.handleInput(ai);
+				// Execution
+				npc.handleInput(aiDecision);
+				npc.m_Turn = false;
+				player.m_Turn = true;
 			}
 		}
-		npc.getAnimatedSprite().setScale(-1.0f, 1.0f);
-		npc.getAnimatedSprite().setPosition(800.0f, 0.0f);
+
+			npc.handleInput(ai);
+
+				npc.getAnimatedSprite().setScale(-1.0f, 1.0f);
+				npc.getAnimatedSprite().setPosition(750.0f, 0.0f);
 		
 
 		// Update the Player
-		if (player.m_Health >= 0)
-		{
+		
 			player.update();
+			if (player.m_Health <= 0) {
+				player.m_Health = 0;
+				m_PlHealth.setString("HEALTH = " + std::to_string(npc.m_Health));
+				input.setCurrent(gpp::Events::Event::DIED_EVENT);
+			}
+
 			if (player.m_Attacking == true || player.m_Shooting == true)
 			{
 				m_PlCoLocation.x += 1.0f;
@@ -257,22 +334,78 @@ int main()
 				{
 					m_PlCoLocation = sf::Vector2f{ 175.0f, 230.0f };
 					m_PlCollider.setPosition(m_PlCoLocation);
-					player.m_Attacking = false;
-					player.m_Shooting = false;
+					
 					if (collison)
 					{
-						npc.m_Health = npc.m_Health - 20;
+						if (player.m_Attacking == true)
+						{
+							npc.m_Health = npc.m_Health - 20;
+						}
+						if (player.m_Shooting == true)
+						{
+							npc.m_Health = npc.m_Health - 10;
+						}
 						m_EnHealth.setString("HEALTH = " + std::to_string(npc.m_Health));
 					}
+					player.m_Attacking = false;
+					player.m_Shooting = false;
+					player.m_Turn = false;
+					npc.m_Turn = true;
 				}
+			}
+		
+		
+		// Update the NPC
+		npc.update();
+		if (npc.m_Health <= 0) {
+			npc.m_Health = 0;
+			m_EnHealth.setString("HEALTH = " + std::to_string(npc.m_Health));
+			ai.setCurrent(gpp::Events::Event::DIED_EVENT);
+		}
+		if (npc.m_Attacking == true || npc.m_Shooting == true)
+		{
+			m_EnCoLocation.x -= 1.0f;
+			m_EnCollider.setPosition(m_EnCoLocation);
+			if (npc.m_Shooting == true)
+			{
+				if (!m_Kunai_texture.loadFromFile(m_Kunai)) {
+					std::cout << "ERROR with Kunai" << std::endl;
+				}
+				m_Kunai_sprite.setTexture(m_Kunai_texture);
+				m_Kunai_sprite.setScale(1.0f, -1.0f);
+				m_Kunai_sprite.setPosition(m_EnCoLocation);
+			}
+
+			// Update the position of the player's collider before collision detection
+			EnemyCollison.p = c2V(m_EnCoLocation.x, m_EnCoLocation.y);
+
+			// Perform collision detection after updating the player's position
+			collison2 = c2CircletoAABB(EnemyCollison, aabb_player);
+
+			if (collison2 || m_EnCoLocation.x <= 0)
+			{
+				m_EnCoLocation = sf::Vector2f{ 610.0f,230.0f };
+				m_EnCollider.setPosition(m_EnCoLocation);
+
+				if (collison2)
+				{
+					if (npc.m_Attacking == true)
+					{
+						player.m_Health = player.m_Health - 20;
+					}
+					if (npc.m_Shooting == true)
+					{
+						player.m_Health = player.m_Health - 10;
+					}
+					m_PlHealth.setString("HEALTH = " + std::to_string(player.m_Health));
+				}
+				npc.m_Attacking = false;
+				npc.m_Shooting = false;
+				npc.m_Turn = false;
+				player.m_Turn = true;
 			}
 		}
 		
-		// Update the NPC
-		if (npc.m_Health >= 0)
-		{
-			npc.update();
-		}
 
 		
 
@@ -280,8 +413,7 @@ int main()
 		window.clear();
 
 		// Draw the Players Current Animated Sprites & info
-		if (player.m_Health >= 0)
-		{
+		
 			if (m_Graphics == false)
 			{
 				window.draw(m_playerBody);
@@ -295,26 +427,28 @@ int main()
 					window.draw(m_Kunai_sprite);
 				}
 			}
-		} 
+		
 		window.draw(m_PlHealth);
 
 		// Draw the NPC's Current Animated Sprites & info
-		if (npc.m_Health >= 0)
-		{
+		
 			if (m_Graphics == false)
 			{
 				window.draw(m_enemyBody);
+				window.draw(m_EnCollider);
 			}
 
 			if (m_Graphics == true)
 			{
 				window.draw(npc.getAnimatedSpriteFrame());
 			}
-		}
+		
 		window.draw(m_EnHealth);
 
 		//Draw the Game Ui
-		window.draw(m_Attack);	
+		window.draw(m_Attack);
+		window.draw(m_Throw);
+		window.draw(m_Dodge);
                
 		// Update the window
 		window.display();

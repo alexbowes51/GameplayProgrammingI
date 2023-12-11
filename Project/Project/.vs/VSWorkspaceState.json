@@ -1,10 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\assets",
-    "\\include",
     "\\src"
   ],
-  "SelectedNode": "\\include\\ClimbDownPlayerState.h",
+  "SelectedNode": "\\src\\GlidePlayerState.cpp",
   "PreviewInSolutionExplorer": false
 }
