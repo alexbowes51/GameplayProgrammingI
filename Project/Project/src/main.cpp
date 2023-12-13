@@ -24,6 +24,7 @@ sf::Text m_EnHealth;
 sf::Text m_Attack;
 sf::Text m_Throw;
 sf::Text m_Dodge;
+sf::Text m_Gameover;
 sf::Texture m_Kunai_texture;
 sf::Sprite m_Kunai_sprite;
 
@@ -68,6 +69,12 @@ void SetupFonts(){
 	m_Dodge.setFillColor(sf::Color::Blue);
 	m_Dodge.setOutlineThickness(2.5f);
 	m_Dodge.setOutlineColor(sf::Color::White);
+
+	m_Gameover.setFont(m_CYBER);
+	m_Gameover.setCharacterSize(50U);
+	m_Gameover.setFillColor(sf::Color::Blue);
+	m_Gameover.setOutlineThickness(2.5f);
+	m_Gameover.setOutlineColor(sf::Color::White);
 
 }
 
@@ -191,29 +198,31 @@ int main()
 					m_Graphics = false;
 					std::cout << "Graphics off" << std::endl;
 				}
-				if (player.m_Turn == true){
-				     if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
-						input.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
-						std::cout << "Player is attacking" << std::endl;
-						player.m_Attacking = true;
-						npc.m_Turn = true;
-						player.m_Turn = false;
+				if (player.m_Health >= 0) {
+					if (player.m_Turn == true) {
+						if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) {
+							input.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
+							std::cout << "Player is attacking" << std::endl;
+							player.m_Attacking = true;
+							npc.m_Turn = true;
+							player.m_Turn = false;
+						}
+						if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
+							input.setCurrent(gpp::Events::Event::THROW_START_EVENT);
+							std::cout << "Player is throwing" << std::endl;
+							player.m_Shooting = true;
+							npc.m_Turn = true;
+							player.m_Turn = false;
+
+						}
+						if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
+							input.setCurrent(gpp::Events::Event::JUMP_UP_EVENT);
+							std::cout << "Player is Jumping" << std::endl;
+							player.m_Defending = true;
+							npc.m_Turn = true;
+							player.m_Turn = false;
+						}
 					}
-					 if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) {
-						 input.setCurrent(gpp::Events::Event::THROW_START_EVENT);
-						 std::cout << "Player is throwing" << std::endl;
-						 player.m_Shooting = true;
-						 npc.m_Turn = true;
-						 player.m_Turn = false;
-						 
-					 }
-					 if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) {
-						 input.setCurrent(gpp::Events::Event::JUMP_UP_EVENT);
-						 std::cout << "Player is Jumping" << std::endl;
-						 player.m_Defending = true;
-						 npc.m_Turn = true;
-						 player.m_Turn = false;
-					 }
 				}
 			break;
 	
@@ -302,13 +311,16 @@ int main()
 		
 
 		// Update the Player
-		
-			player.update();
 			if (player.m_Health <= 0) {
 				player.m_Health = 0;
-				m_PlHealth.setString("HEALTH = " + std::to_string(npc.m_Health));
+				m_PlHealth.setString("HEALTH = " + std::to_string(player.m_Health));
 				input.setCurrent(gpp::Events::Event::DIED_EVENT);
+
+				m_Gameover.setString("YOU LOSE");
+				m_Gameover.setPosition(400.0f, 100.0f);
 			}
+
+            player.update();
 
 			if (player.m_Attacking == true || player.m_Shooting == true)
 			{
@@ -339,17 +351,23 @@ int main()
 					{
 						if (player.m_Attacking == true)
 						{
-							npc.m_Health = npc.m_Health - 20;
+							if (npc.m_Defending == false)
+							{
+								npc.m_Health = npc.m_Health - 20;
+							}
 						}
 						if (player.m_Shooting == true)
 						{
-							npc.m_Health = npc.m_Health - 10;
+							if (npc.m_Defending == false) {
+								npc.m_Health = npc.m_Health - 10;
+							}
 						}
 						m_EnHealth.setString("HEALTH = " + std::to_string(npc.m_Health));
 					}
 					player.m_Attacking = false;
 					player.m_Shooting = false;
 					player.m_Turn = false;
+					player.m_Defending = false;
 					npc.m_Turn = true;
 				}
 			}
@@ -361,7 +379,11 @@ int main()
 			npc.m_Health = 0;
 			m_EnHealth.setString("HEALTH = " + std::to_string(npc.m_Health));
 			ai.setCurrent(gpp::Events::Event::DIED_EVENT);
+			m_Gameover.setString("YOU WIN");
+			m_Gameover.setPosition(400.0f, 100.0f);
+
 		}
+
 		if (npc.m_Attacking == true || npc.m_Shooting == true)
 		{
 			m_EnCoLocation.x -= 1.0f;
@@ -391,17 +413,22 @@ int main()
 				{
 					if (npc.m_Attacking == true)
 					{
-						player.m_Health = player.m_Health - 20;
+						if (player.m_Defending == false) {
+							player.m_Health = player.m_Health - 20;
+						}
 					}
 					if (npc.m_Shooting == true)
 					{
-						player.m_Health = player.m_Health - 10;
+						if (player.m_Defending == false) {
+							player.m_Health = player.m_Health - 10;
+						}
 					}
 					m_PlHealth.setString("HEALTH = " + std::to_string(player.m_Health));
 				}
 				npc.m_Attacking = false;
 				npc.m_Shooting = false;
 				npc.m_Turn = false;
+				npc.m_Defending = false;
 				player.m_Turn = true;
 			}
 		}
@@ -449,6 +476,9 @@ int main()
 		window.draw(m_Attack);
 		window.draw(m_Throw);
 		window.draw(m_Dodge);
+		if (npc.m_Health <= 0 || player.m_Health <= 0) {
+			window.draw(m_Gameover);
+		}
                
 		// Update the window
 		window.display();
