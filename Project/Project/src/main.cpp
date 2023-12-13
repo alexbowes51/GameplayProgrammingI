@@ -240,7 +240,10 @@ int main()
 					if (event.key.code == sf::Keyboard::S) {
 						input.setCurrent(gpp::Events::Event::THROW_STOP_EVENT);
 						std::cout << "Stopping Player Throwing" << std::endl;
-						
+					}
+					if (event.key.code == sf::Keyboard::D) {
+						input.setCurrent(gpp::Events::Event::FALL_DOWN_EVENT);
+						std::cout << "Player Falling " << std::endl;
 					}
 				break;
 			default:
@@ -270,7 +273,7 @@ int main()
 			}
 
 			if (currentCooldown <= sf::Time::Zero) {
-				int weapon = rand() % 3 + 1;
+				int weapon = rand() % 5 + 1;
 				switch (weapon) {
 				case 1:
 					aiDecision.setCurrent(gpp::Events::Event::ATTACK_START_EVENT);
@@ -358,7 +361,8 @@ int main()
 						}
 						if (player.m_Shooting == true)
 						{
-							if (npc.m_Defending == false) {
+							if (npc.m_Defending == false)
+							{
 								npc.m_Health = npc.m_Health - 10;
 							}
 						}

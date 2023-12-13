@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
+    "\\include",
     "\\src"
   ],
-  "SelectedNode": "\\src\\GlidePlayerState.cpp",
+  "SelectedNode": "\\include\\Defines.h",
   "PreviewInSolutionExplorer": false
 }
